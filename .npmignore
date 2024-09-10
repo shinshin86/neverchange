@@ -1,0 +1,7 @@
+e2e/
+images/
+src/
+biome.json
+playwright.config.ts
+tsconfig.json
+vite.config.ts

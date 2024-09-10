@@ -1,0 +1,53 @@
+{
+  "name": "neverchange",
+  "description": "NeverChange is a database solution for web applications using SQLite WASM and OPFS.",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/neverchange.umd.js",
+  "module": "./dist/neverchange.es.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/neverchange.es.js",
+      "require": "./dist/neverchange.umd.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc",
+    "dev:e2e": "vite --mode e2e",
+    "e2e": "playwright test",
+    "fmt": "biome format --write src e2e "
+  },
+  "keywords": [
+    "sqlite",
+    "sqlite-wasm",
+    "wasm",
+    "opfs",
+    "frontend",
+    "database"
+  ],
+  "author": "shinshin86 <shinshin86npm@gmail.com> (https://github.com/shinshin86)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shinshin86/neverchange.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shinshin86/neverchange/issues"
+  },
+  "homepage": "https://github.com/shinshin86/neverchange#readme",
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.46.1-build2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.8.3",
+    "@playwright/test": "^1.46.1",
+    "@types/node": "^22.5.2",
+    "playwright": "^1.46.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2"
+  }
+}
