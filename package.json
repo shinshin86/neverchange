@@ -19,7 +19,8 @@
     "build": "vite build && tsc",
     "dev:e2e": "vite --mode e2e",
     "e2e": "playwright test",
-    "fmt": "biome format --write src e2e "
+    "fmt": "biome format --write src e2e ",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "sqlite",
