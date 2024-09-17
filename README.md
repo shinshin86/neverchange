@@ -1,5 +1,7 @@
 # NeverChange
 
+[![CI](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml/badge.svg)](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml)
+
 ![Project logo](./images/logo.png)
 
 NeverChange is a database solution for web applications using SQLite WASM and OPFS.
