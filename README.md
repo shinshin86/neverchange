@@ -1,5 +1,7 @@
 # NeverChange
 
+[![CI](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml/badge.svg)](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml)
+
 ![Project logo](./images/logo.png)
 
 NeverChange is a database solution for web applications using SQLite WASM and OPFS.
@@ -13,6 +15,13 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 ```
 npm install neverchange
 ```
+
+## Support Browser
+
+* Google Chrome
+
+This project currently supports and is tested on `Google Chrome` only.  
+We use `Playwright` for our end-to-end (E2E) tests, which are configured to run exclusively on `Chrome`.
 
 ## Requirements
 
