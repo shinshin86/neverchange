@@ -16,7 +16,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         channel: 'chrome',
-        headless: false,
+        headless: true,
       },
     },
   ],
