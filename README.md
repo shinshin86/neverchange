@@ -16,7 +16,7 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 npm install neverchange
 ```
 
-## Support Browser
+## Support Browsers
 All tests are tested only through Playwright.
 
 * Google Chrome
