@@ -13,25 +13,22 @@ export class NeverChangeDB implements INeverChangeDB {
     (command: string, params: any) => Promise<any>
   > | null = null;
   private dbId: string | null = null;
-  private debug: boolean;
-  private isMigrationActive: boolean;
   private migrations: Migration[] = [];
 
   constructor(
     private dbName: string,
-    options: { debug?: boolean; isMigrationActive?: boolean } = {},
+    private options: { debug?: boolean; isMigrationActive?: boolean } = {},
   ) {
-    this.debug = options.debug ?? false;
+    this.options.debug = options.debug ?? false;
+    this.options.isMigrationActive = options.isMigrationActive ?? true;
 
-    // isMigrationActive is default true
-    this.isMigrationActive = options.isMigrationActive ?? true;
-    if (this.isMigrationActive) {
+    if (this.options.isMigrationActive) {
       this.addMigrations([initialMigration]);
     }
   }
 
-  protected log(...args: any[]): void {
-    if (this.debug) {
+  private log(...args: any[]): void {
+    if (this.options.debug) {
       console.log(...args);
     }
   }
@@ -39,70 +36,72 @@ export class NeverChangeDB implements INeverChangeDB {
   async init(): Promise<void> {
     if (this.dbPromise) return;
 
-    this.dbPromise = new Promise(async (resolve, reject) => {
-      try {
-        this.log("Loading and initializing SQLite3 module...");
+    try {
+      this.dbPromise = this.initializeDatabase();
+      await this.dbPromise;
 
-        const promiser = (await new Promise<unknown>((resolve) => {
-          const _promiser = sqlite3Worker1Promiser({
-            onready: () => resolve(_promiser),
-          });
-        })) as (command: string, params: any) => Promise<any>;
-
-        this.log("Done initializing. Opening database...");
-
-        // OPFS
-        let openResponse;
-        try {
-          openResponse = await promiser("open", {
-            filename: `file:${this.dbName}.sqlite3?vfs=opfs`,
-          });
-          this.log("OPFS database opened:", openResponse.result.filename);
-        } catch (opfsError) {
-          console.warn(
-            "OPFS is not available, falling back to in-memory database:",
-            opfsError,
-          );
-          openResponse = await promiser("open", {
-            filename: ":memory:",
-          });
-          this.log("In-memory database opened");
-        }
-
-        this.dbId = openResponse.result.dbId;
-
-        this.log("Database initialized successfully");
-        resolve(promiser);
-      } catch (err) {
-        console.error("Failed to initialize database:", err);
-        reject(err);
+      if (this.options.isMigrationActive) {
+        await this.createMigrationTable();
+        await this.runMigrations();
       }
-    });
-
-    if (this.isMigrationActive) {
-      await this.createMigrationTable();
-      await this.runMigrations();
+    } catch (err) {
+      console.error("Failed to initialize database:", err);
+      throw err;
     }
+  }
+
+  private async initializeDatabase(): Promise<
+    (command: string, params: any) => Promise<any>
+  > {
+    this.log("Loading and initializing SQLite3 module...");
+
+    const promiser = await this.getPromiser();
+    this.log("Done initializing. Opening database...");
+
+    const openResponse = await this.openDatabase(promiser);
+    this.dbId = openResponse.result.dbId;
+
+    this.log("Database initialized successfully");
+    return promiser;
   }
 
   private async getPromiser(): Promise<
     (command: string, params: any) => Promise<any>
   > {
-    if (!this.dbPromise) {
-      throw new Error("Database not initialized. Call init() first.");
+    return new Promise<(command: string, params: any) => Promise<any>>(
+      (resolve) => {
+        sqlite3Worker1Promiser({
+          onready: (promiser: (command: string, params: any) => Promise<any>) =>
+            resolve(promiser),
+        });
+      },
+    );
+  }
+
+  private async openDatabase(
+    promiser: (command: string, params: any) => Promise<any>,
+  ): Promise<any> {
+    try {
+      const response = await promiser("open", {
+        filename: `file:${this.dbName}.sqlite3?vfs=opfs`,
+      });
+      this.log("OPFS database opened:", response.result.filename);
+      return response;
+    } catch (opfsError) {
+      console.warn(
+        "OPFS is not available, falling back to in-memory database:",
+        opfsError,
+      );
+      const response = await promiser("open", { filename: ":memory:" });
+      this.log("In-memory database opened");
+      return response;
     }
-    return this.dbPromise;
   }
 
   async execute(sql: string, params: any[] = []): Promise<ExecuteResult> {
     try {
-      const promiser = await this.getPromiser();
-      const r = await promiser("exec", {
-        sql,
-        bind: params,
-        dbId: this.dbId,
-      });
-      return r;
+      const promiser = await this.getPromiserOrThrow();
+      return await promiser("exec", { sql, bind: params, dbId: this.dbId });
     } catch (error) {
       console.error("Error executing SQL:", error);
       throw error;
@@ -113,20 +112,19 @@ export class NeverChangeDB implements INeverChangeDB {
     sql: string,
     params: any[] = [],
   ): Promise<QueryResult<T>> {
-    const promiser = await this.getPromiser();
+    const promiser = await this.getPromiserOrThrow();
     const result = await promiser("exec", {
       sql,
       bind: params,
       rowMode: "object",
       dbId: this.dbId,
     });
-
     return result.result.resultRows || [];
   }
 
   async close(): Promise<void> {
     if (this.dbId) {
-      const promiser = await this.getPromiser();
+      const promiser = await this.getPromiserOrThrow();
       await promiser("close", { dbId: this.dbId });
       this.dbId = null;
       this.dbPromise = null;
@@ -135,7 +133,6 @@ export class NeverChangeDB implements INeverChangeDB {
 
   addMigrations(migrations: Migration[]): void {
     this.migrations.push(...migrations);
-    // sort migrations by version
     this.migrations.sort((a, b) => a.version - b.version);
   }
 
@@ -149,14 +146,10 @@ export class NeverChangeDB implements INeverChangeDB {
   }
 
   private async getCurrentVersion(): Promise<number> {
-    // if migrations table does not exist, return 0
-    const tables = await this.query(
+    const tables = await this.query<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type='table'",
     );
-    const tableNames = tables.map((t) => t.name);
-    if (!tableNames.includes("migrations")) {
-      return 0;
-    }
+    if (!tables.some((t) => t.name === "migrations")) return 0;
 
     const result = await this.query<{ version: number }>(
       "SELECT MAX(version) as version FROM migrations",
@@ -172,12 +165,20 @@ export class NeverChangeDB implements INeverChangeDB {
 
     for (const migration of pendingMigrations) {
       this.log(`Running migration to version ${migration.version}`);
-
       await migration.up(this);
       await this.execute("INSERT INTO migrations (version) VALUES (?)", [
         migration.version,
       ]);
       this.log(`Migration to version ${migration.version} completed`);
     }
+  }
+
+  private async getPromiserOrThrow(): Promise<
+    (command: string, params: any) => Promise<any>
+  > {
+    if (!this.dbPromise) {
+      throw new Error("Database not initialized. Call init() first.");
+    }
+    return this.dbPromise;
   }
 }

@@ -92,7 +92,7 @@ test.describe("NeverChangeDB", () => {
       await db.close();
 
       try {
-        await db["getPromiser"]();
+        await db.query("SELECT 1");
         return false;
       } catch (err) {
         return err.message === "Database not initialized. Call init() first.";
