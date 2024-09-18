@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -13,9 +13,37 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'Google Chrome',
       use: {
         channel: 'chrome',
+        headless: true,
+      },
+    },
+    {
+      name: 'Microsoft Edge',
+      use: {
+        channel: 'msedge',
+        headless: true,
+      },
+    },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        headless: true,
+      },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        headless: true,
+      },
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
         headless: true,
       },
     },
