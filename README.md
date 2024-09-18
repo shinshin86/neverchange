@@ -17,8 +17,13 @@ npm install neverchange
 ```
 
 ## Support Browser
+All tests are tested only through Playwright.
 
 * Google Chrome
+* Microsoft Edge
+* Firefox
+* Safari
+
 
 This project currently supports and is tested on `Google Chrome` only.  
 We use `Playwright` for our end-to-end (E2E) tests, which are configured to run exclusively on `Chrome`.
@@ -39,6 +44,12 @@ We use `Playwright` for our end-to-end (E2E) tests, which are configured to run 
 2. Install dependencies:
    ```
    npm install
+   ```
+
+3. Install browsers for Playwright for e2e test
+
+   ```
+   npx playwright install
    ```
 
 ## Available Scripts
