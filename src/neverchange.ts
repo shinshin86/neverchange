@@ -181,4 +181,122 @@ export class NeverChangeDB implements INeverChangeDB {
     }
     return this.dbPromise;
   }
+
+  async dumpDatabase(
+    options: { compatibilityMode?: boolean } = {},
+  ): Promise<string> {
+    const { compatibilityMode = false } = options;
+
+    let dumpOutput = "";
+
+    if (compatibilityMode) {
+      dumpOutput += `PRAGMA foreign_keys = OFF;\nBEGIN TRANSACTION;\n\n`;
+    }
+
+    // Get all database objects
+    const objects = await this.query<{
+      type: string;
+      name: string;
+      sql: string | null;
+    }>(`
+        SELECT type, name, sql FROM sqlite_master
+        WHERE sql NOT NULL AND name != 'sqlite_sequence'
+      `);
+
+    // Dump table contents
+    for (const obj of objects) {
+      if (obj.type === "table") {
+        dumpOutput += `${obj.sql};\n`;
+
+        // Dump table contents
+        const rows = await this.query(`SELECT * FROM ${obj.name}`);
+        for (const row of rows) {
+          const columns = Object.keys(row).join(", ");
+          const values = Object.values(row)
+            .map((value) =>
+              value === null
+                ? "NULL"
+                : typeof value === "string"
+                  ? `'${value.replace(/'/g, "''")}'`
+                  : value,
+            )
+            .join(", ");
+
+          dumpOutput += `INSERT INTO ${obj.name} (${columns}) VALUES (${values});\n`;
+        }
+        dumpOutput += "\n";
+      }
+    }
+
+    // Handle sqlite_sequence separately
+    const seqRows = await this.query<{ name: string; seq: number }>(
+      `SELECT * FROM sqlite_sequence`,
+    );
+    if (seqRows.length > 0) {
+      dumpOutput += `DELETE FROM sqlite_sequence;\n`;
+      for (const row of seqRows) {
+        dumpOutput += `INSERT INTO sqlite_sequence VALUES('${row.name}', ${row.seq});\n`;
+      }
+      dumpOutput += "\n";
+    }
+
+    // Add other database objects (views, indexes, triggers)
+    for (const obj of objects) {
+      if (obj.type !== "table") {
+        dumpOutput += `${obj.sql};\n\n`;
+      }
+    }
+
+    if (compatibilityMode) {
+      dumpOutput += `COMMIT;\n`;
+    }
+
+    return dumpOutput;
+  }
+
+  async importDump(
+    dumpContent: string,
+    options: { compatibilityMode?: boolean } = {},
+  ): Promise<void> {
+    const { compatibilityMode = false } = options;
+    const statements = dumpContent
+      .split(";")
+      .map((stmt) => stmt.trim())
+      .filter(Boolean);
+
+    if (!compatibilityMode) {
+      await this.execute("PRAGMA foreign_keys = OFF");
+      await this.execute("BEGIN TRANSACTION");
+    }
+
+    try {
+      // Drop all existing tables, views, and indexes
+      const existingObjects = await this.query<{ type: string; name: string }>(`
+          SELECT type, name FROM sqlite_master WHERE type IN ('table', 'view', 'index') AND name != 'sqlite_sequence'
+        `);
+      for (const { type, name } of existingObjects) {
+        await this.execute(`DROP ${type} IF EXISTS ${name}`);
+      }
+
+      // Execute all statements from the dump
+      for (const statement of statements) {
+        if (statement !== "COMMIT") {
+          // Skip the final COMMIT statement
+          await this.execute(statement);
+        }
+      }
+
+      if (!compatibilityMode) {
+        await this.execute("COMMIT");
+        await this.execute("PRAGMA foreign_keys = ON");
+      }
+    } catch (error) {
+      if (!compatibilityMode) {
+        await this.execute("ROLLBACK");
+        await this.execute("PRAGMA foreign_keys = ON");
+      }
+
+      throw error;
+    }
+  }
 }
