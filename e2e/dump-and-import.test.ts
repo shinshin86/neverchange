@@ -26,7 +26,7 @@ test.describe("NeverChangeDB Dump and Import", () => {
       return await db.dumpDatabase();
     });
 
-    expect(dumpedData).not.toContain("PRAGMA foreign_keys = OFF");
+    expect(dumpedData).not.toContain("PRAGMA foreign_keys=OFF");
     expect(dumpedData).not.toContain("BEGIN TRANSACTION");
     expect(dumpedData).toContain("CREATE TABLE test_table");
     expect(dumpedData).toContain("INSERT INTO test_table");

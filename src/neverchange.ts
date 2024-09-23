@@ -265,7 +265,7 @@ export class NeverChangeDB implements INeverChangeDB {
       .filter(Boolean);
 
     if (!compatibilityMode) {
-      await this.execute("PRAGMA foreign_keys = OFF");
+      await this.execute("PRAGMA foreign_keys=OFF");
       await this.execute("BEGIN TRANSACTION");
     }
 
