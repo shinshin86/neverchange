@@ -182,6 +182,10 @@ export class NeverChangeDB implements INeverChangeDB {
     return this.dbPromise;
   }
 
+  private escapeBlob(blob: Uint8Array): string {
+    return `X'${Array.from(new Uint8Array(blob), (byte) => byte.toString(16).padStart(2, "0")).join("")}'`;
+  }
+
   async dumpDatabase(
     options: { compatibilityMode?: boolean; table?: string } = {},
   ): Promise<string> {
@@ -214,13 +218,16 @@ export class NeverChangeDB implements INeverChangeDB {
         for (const row of rows) {
           const columns = Object.keys(row).join(", ");
           const values = Object.values(row)
-            .map((value) =>
-              value === null
-                ? "NULL"
-                : typeof value === "string"
-                  ? `'${value.replace(/'/g, "''")}'`
-                  : value,
-            )
+            .map((value) => {
+              if (value instanceof Uint8Array) {
+                return this.escapeBlob(value);
+              } else if (value === null) {
+                return "NULL";
+              } else if (typeof value === "string") {
+                return `'${value.replace(/'/g, "''")}'`;
+              }
+              return value;
+            })
             .join(", ");
 
           dumpOutput += `INSERT INTO ${obj.name} (${columns}) VALUES (${values});\n`;
@@ -231,15 +238,19 @@ export class NeverChangeDB implements INeverChangeDB {
 
     // Handle sqlite_sequence separately if no specific table is specified
     if (!table) {
-      const seqRows = await this.query<{ name: string; seq: number }>(
-        `SELECT * FROM sqlite_sequence`,
-      );
-      if (seqRows.length > 0) {
-        dumpOutput += `DELETE FROM sqlite_sequence;\n`;
-        for (const row of seqRows) {
-          dumpOutput += `INSERT INTO sqlite_sequence VALUES('${row.name}', ${row.seq});\n`;
+      try {
+        const seqRows = await this.query<{ name: string; seq: number }>(
+          `SELECT * FROM sqlite_sequence`,
+        );
+        if (seqRows.length > 0) {
+          dumpOutput += `DELETE FROM sqlite_sequence;\n`;
+          for (const row of seqRows) {
+            dumpOutput += `INSERT INTO sqlite_sequence VALUES('${row.name}', ${row.seq});\n`;
+          }
+          dumpOutput += "\n";
         }
-        dumpOutput += "\n";
+      } catch (error) {
+        this.log("sqlite_sequence table does not exist, skipping...");
       }
     }
 
