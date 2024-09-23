@@ -53,6 +53,90 @@ All tests are tested only through Playwright.
 
 ### Usage
 
+#### Basic
+
+Here's a basic example of how to use NeverChangeDB to create a database, insert data, and query it:
+
+```typescript
+import { NeverChangeDB } from 'neverchange';
+
+async function main() {
+  // Initialize the database
+  const db = new NeverChangeDB('myDatabase');
+  await db.init();
+
+  // Create a table
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL
+    )
+  `);
+
+  // Insert data
+  await db.execute(
+    'INSERT INTO users (name, email) VALUES (?, ?)',
+    ['John Doe', 'john@example.com']
+  );
+
+  // Query data
+  const users = await db.query('SELECT * FROM users');
+  console.log('Users:', users);
+
+  // Close the database connection
+  await db.close();
+}
+
+main().catch(console.error);
+```
+
+#### Migration
+
+NeverChangeDB supports database migrations, allowing you to evolve your database schema over time. Here's an example of how to define and use migrations:
+
+```typescript
+import { NeverChangeDB } from 'neverchange';
+
+// Define migrations
+const migrations = [
+  {
+    version: 1,
+    up: async (db) => {
+      await db.execute(`
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL
+        )
+      `);
+    }
+  },
+  {
+    version: 2,
+    up: async (db) => {
+      await db.execute(`
+        ALTER TABLE users ADD COLUMN email TEXT
+      `);
+    }
+  }
+];
+
+async function main() {
+  // Initialize the database with migrations
+  const db = new NeverChangeDB('myDatabase', { isMigrationActive: true });
+  db.addMigrations(migrations);
+  await db.init();
+
+  // The database will now have the latest schema
+  const tableInfo = await db.query('PRAGMA table_info(users)');
+  console.log('Users table schema:', tableInfo);
+
+  await db.close();
+}
+
+main().catch(console.error);
+```
+
 #### Dump and Import Features
 
 NeverChangeDB offers two modes for database dump and import: Optimized Mode and SQLite Compatibility Mode.
