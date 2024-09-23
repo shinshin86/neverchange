@@ -183,9 +183,9 @@ export class NeverChangeDB implements INeverChangeDB {
   }
 
   async dumpDatabase(
-    options: { compatibilityMode?: boolean } = {},
+    options: { compatibilityMode?: boolean; table?: string } = {},
   ): Promise<string> {
-    const { compatibilityMode = false } = options;
+    const { compatibilityMode = false, table } = options;
 
     let dumpOutput = "";
 
@@ -193,15 +193,16 @@ export class NeverChangeDB implements INeverChangeDB {
       dumpOutput += `PRAGMA foreign_keys = OFF;\nBEGIN TRANSACTION;\n\n`;
     }
 
-    // Get all database objects
+    // Get all database objects or just the specified table
+    const objectsQuery = table
+      ? `SELECT type, name, sql FROM sqlite_master WHERE type='table' AND name = ?`
+      : `SELECT type, name, sql FROM sqlite_master WHERE sql NOT NULL AND name != 'sqlite_sequence'`;
+
     const objects = await this.query<{
       type: string;
       name: string;
       sql: string | null;
-    }>(`
-        SELECT type, name, sql FROM sqlite_master
-        WHERE sql NOT NULL AND name != 'sqlite_sequence'
-      `);
+    }>(objectsQuery, table ? [table] : []);
 
     // Dump table contents
     for (const obj of objects) {
@@ -228,22 +229,26 @@ export class NeverChangeDB implements INeverChangeDB {
       }
     }
 
-    // Handle sqlite_sequence separately
-    const seqRows = await this.query<{ name: string; seq: number }>(
-      `SELECT * FROM sqlite_sequence`,
-    );
-    if (seqRows.length > 0) {
-      dumpOutput += `DELETE FROM sqlite_sequence;\n`;
-      for (const row of seqRows) {
-        dumpOutput += `INSERT INTO sqlite_sequence VALUES('${row.name}', ${row.seq});\n`;
+    // Handle sqlite_sequence separately if no specific table is specified
+    if (!table) {
+      const seqRows = await this.query<{ name: string; seq: number }>(
+        `SELECT * FROM sqlite_sequence`,
+      );
+      if (seqRows.length > 0) {
+        dumpOutput += `DELETE FROM sqlite_sequence;\n`;
+        for (const row of seqRows) {
+          dumpOutput += `INSERT INTO sqlite_sequence VALUES('${row.name}', ${row.seq});\n`;
+        }
+        dumpOutput += "\n";
       }
-      dumpOutput += "\n";
     }
 
-    // Add other database objects (views, indexes, triggers)
-    for (const obj of objects) {
-      if (obj.type !== "table") {
-        dumpOutput += `${obj.sql};\n\n`;
+    // Add other database objects (views, indexes, triggers) if no specific table is specified
+    if (!table) {
+      for (const obj of objects) {
+        if (obj.type !== "table") {
+          dumpOutput += `${obj.sql};\n\n`;
+        }
       }
     }
 
