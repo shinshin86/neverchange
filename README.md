@@ -95,6 +95,35 @@ await db.importDump(dumpContent);
 await db.importDump(dumpContent, { compatibilityMode: true });
 ```
 
+#### Handling of BLOB Data
+
+When using the dump and import features, special attention should be paid to BLOB (Binary Large Object) data:
+
+- **Dumping BLOB Data**: BLOB data is serialized into a special string format during the dump process. This ensures that binary data is correctly represented in the dump output.
+
+- **Importing BLOB Data**: When importing, the special string format for BLOB data is automatically detected and converted back into the appropriate binary format.
+
+- **Working with BLOB Data**: After importing, BLOB data may be represented as an object with numeric keys (e.g., `{"0":1,"1":2,"2":3}`). To work with this data as a `Uint8Array`, you may need to convert it:
+
+```javascript
+const convertToUint8Array = (obj) => {
+   if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      return new Uint8Array(Object.values(obj));
+   }
+
+   return obj;
+};
+
+// Usage
+const blobData = convertToUint8Array(row.blobColumn);
+```
+
+#### Limitations and Considerations
+
+ - **Large Databases**: When working with large databases, consider the memory limitations of the browser environment. For very large datasets, you may need to implement chunking strategies for dump and import operations.
+ - **Complex Data Types**: While NeverChangeDB handles most SQLite data types seamlessly, complex types like JSON or custom data structures may require additional processing when dumping or importing.
+ - **Cross-Browser Compatibility**: Although the core functionality is designed to work across modern browsers, some advanced features or performance optimizations may vary between different browser environments. Always test thoroughly in your target browsers.
+
 ## For Developers
 
 ### Setup
