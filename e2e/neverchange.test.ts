@@ -102,8 +102,7 @@ test.describe("NeverChangeDB", () => {
     expect(closed).toBe(true);
   });
 
-  // if OPFS is disabled, this test will fail
-  test.skip("should persist data between connections", async ({ page }) => {
+  test("should persist data between connections", async ({ page }) => {
     await page.evaluate(async () => {
       const db1 = new (window as any).NeverChangeDB("persist-test-db");
       await db1.init();
