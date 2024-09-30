@@ -40,13 +40,6 @@ export default defineConfig({
         headless: true,
       },
     },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-        headless: true,
-      },
-    },
   ],
   webServer: {
     command: 'npm run dev:e2e',
