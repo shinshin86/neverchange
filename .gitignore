@@ -29,3 +29,8 @@ test-results
 
 # mac
 .DS_Store
+
+# coi-serviceworker
+# These files are included in the .gitignore because they are automatically generated during the build process.
+# Run npm run build:e2e to generate the necessary files and place them in the correct location.
+e2e/coi-serviceworker.js

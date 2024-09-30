@@ -44,7 +44,7 @@ All tests are tested only through Playwright.
 * Google Chrome
 * Microsoft Edge
 * Firefox
-* Safari
+* ~~Safari~~ (https://github.com/shinshin86/neverchange/issues/6)
 
 ### Requirements
 
