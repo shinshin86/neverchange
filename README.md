@@ -249,6 +249,8 @@ This will insert the CSV data into the `your_table` table. Ensure the table is c
 
 ## For Developers
 
+![For Developers image](./images/for-developers-image.jpg)
+
 ### Setup
 
 1. Clone the repository:
