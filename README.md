@@ -53,6 +53,8 @@ All tests are tested only through Playwright.
 
 ### Usage
 
+![Usage image](./images/Usage.jpg)
+
 #### Basic
 
 Here's a basic example of how to use NeverChangeDB to create a database, insert data, and query it:
