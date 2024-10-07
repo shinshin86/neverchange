@@ -12,13 +12,14 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 
 ## Table of Contents
 
-- [For Users](#for-users)
-  - [Installation](#installation)
-  - [Supported Browsers](#supported-browsers)
-  - [Requirements](#requirements)
-  - [Usage](#usage)
-    - [Dump and Import Features](#dump-and-import-features)
-    - [Examples](#examples)
+- [Installation](#installation)
+- [Supported Browsers](#supported-browsers)
+- [Requirements](#requirements)
+- [Usage](#usage)
+  - [Basic](#basic)
+  - [Migration](#migration)
+  - [Dump and Import Features](#dump-and-import-features)
+  - [CSV Export and Import](#csv-export-and-import)
 - [For Developers](#for-developers)
   - [Setup](#setup)
   - [Available Scripts](#available-scripts)
@@ -26,15 +27,13 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
   - [Development](#development)
 - [License](#license)
 
-## For Users
-
-### Installation
+## Installation
 
 ```
 npm install neverchange
 ```
 
-### Supported Browsers
+## Supported Browsers
 
 This project currently supports and is tested on `Google Chrome` only.  
 We use `Playwright` for our end-to-end (E2E) tests, which are configured to run exclusively on `Chrome`.
@@ -46,16 +45,16 @@ All tests are tested only through Playwright.
 * Firefox
 * ~~Safari~~ (https://github.com/shinshin86/neverchange/issues/6)
 
-### Requirements
+## Requirements
 
 - Node.js (version 20 or higher recommended)
 - npm (usually comes with Node.js)
 
-### Usage
+## Usage
 
 ![Usage image](./images/Usage.jpg)
 
-#### Basic
+### Basic
 
 Here's a basic example of how to use NeverChangeDB to create a database, insert data, and query it:
 
@@ -93,7 +92,7 @@ async function main() {
 main().catch(console.error);
 ```
 
-#### Migration
+### Migration
 
 NeverChangeDB supports database migrations, allowing you to evolve your database schema over time. Here's an example of how to define and use migrations:
 
@@ -139,11 +138,11 @@ async function main() {
 main().catch(console.error);
 ```
 
-#### Dump and Import Features
+### Dump and Import Features
 
 NeverChangeDB offers two modes for database dump and import: Optimized Mode and SQLite Compatibility Mode.
 
-##### Optimized Mode (Default)
+#### Optimized Mode (Default)
 
 In the optimized mode, the dump output does not include transaction control statements or PRAGMA settings. This mode is designed for:
 
@@ -153,7 +152,7 @@ In the optimized mode, the dump output does not include transaction control stat
 - Performance: Enables fine-tuned control over transaction size and checkpoints for large datasets.
 - Platform Independence: Improves compatibility between different SQLite implementations.
 
-##### SQLite Compatibility Mode
+#### SQLite Compatibility Mode
 
 This mode generates dump output that closely resembles the standard SQLite `.dump` command, including transaction control statements and PRAGMA settings. Use this mode when:
 
@@ -210,11 +209,11 @@ const blobData = convertToUint8Array(row.blobColumn);
  - **Complex Data Types**: While NeverChangeDB handles most SQLite data types seamlessly, complex types like JSON or custom data structures may require additional processing when dumping or importing.
  - **Cross-Browser Compatibility**: Although the core functionality is designed to work across modern browsers, some advanced features or performance optimizations may vary between different browser environments. Always test thoroughly in your target browsers.
 
-#### CSV Export and Import
+### CSV Export and Import
 
 NeverChangeDB also supports CSV export and import functionality, allowing you to easily work with CSV files in your database.
 
-##### CSV Export
+#### CSV Export
 
 You can export a table to a CSV format using the `dumpTableToCSV` method:
 
@@ -232,7 +231,7 @@ await db.close();
 
 This will export the contents of `your_table` to a CSV string.
 
-##### CSV Import
+#### CSV Import
 
 You can import CSV content into a table using the `importCSVToTable` method:
 
