@@ -208,6 +208,44 @@ const blobData = convertToUint8Array(row.blobColumn);
  - **Complex Data Types**: While NeverChangeDB handles most SQLite data types seamlessly, complex types like JSON or custom data structures may require additional processing when dumping or importing.
  - **Cross-Browser Compatibility**: Although the core functionality is designed to work across modern browsers, some advanced features or performance optimizations may vary between different browser environments. Always test thoroughly in your target browsers.
 
+#### CSV Export and Import
+
+NeverChangeDB also supports CSV export and import functionality, allowing you to easily work with CSV files in your database.
+
+##### CSV Export
+
+You can export a table to a CSV format using the `dumpTableToCSV` method:
+
+```typescript
+const db = new NeverChangeDB('myDatabase');
+await db.init();
+
+/* We will assume that you have added tables and information */
+
+const csvContent = await db.dumpTableToCSV('your_table');
+console.log('CSV Export:', csvContent);
+
+await db.close();
+```
+
+This will export the contents of `your_table` to a CSV string.
+
+##### CSV Import
+
+You can import CSV content into a table using the `importCSVToTable` method:
+
+```typescript
+const db = new NeverChangeDB('myDatabase');
+await db.init();
+
+const csvContent = `id,name,email\n1,John Doe,john@example.com\n2,Jane Smith,jane@example.com`;
+await db.importCSVToTable('your_table', csvContent);
+
+await db.close();
+```
+
+This will insert the CSV data into the `your_table` table. Ensure the table is created beforehand and the columns match the CSV headers.
+
 ## For Developers
 
 ### Setup

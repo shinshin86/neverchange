@@ -7,6 +7,7 @@ import {
   Migration,
 } from "./types";
 import { initialMigration } from "./migrations";
+import { parseCSVLine } from "./parser";
 
 export class NeverChangeDB implements INeverChangeDB {
   private dbPromise: Promise<
@@ -313,6 +314,65 @@ export class NeverChangeDB implements INeverChangeDB {
       }
 
       throw error;
+    }
+  }
+
+  async dumpTableToCSV(
+    tableName: string,
+    options: { quoteAllFields?: boolean } = {},
+  ): Promise<string> {
+    const rows = await this.query(`SELECT * FROM ${tableName}`);
+
+    const columnNames = Object.keys(
+      rows[0] ||
+        (await this.query(`PRAGMA table_info(${tableName})`)).reduce(
+          (acc: any, col: any) => ({ ...acc, [col.name]: "" }),
+          {},
+        ),
+    )
+      .map((col) => (options.quoteAllFields ? `"${col}"` : col))
+      .join(",");
+
+    if (rows.length === 0) {
+      return `${columnNames}\r\n`;
+    }
+
+    const escapeCSVField = (field: any): string => {
+      const strValue = field?.toString() || "";
+      const needsQuoting =
+        options.quoteAllFields ||
+        strValue.includes(",") ||
+        strValue.includes("\n") ||
+        strValue.includes('"');
+
+      if (needsQuoting) {
+        return `"${strValue.replace(/"/g, '""')}"`;
+      }
+
+      return strValue;
+    };
+
+    const csvRows = rows.map((row) =>
+      Object.values(row).map(escapeCSVField).join(","),
+    );
+
+    return `${columnNames}\r\n${csvRows.join("\r\n")}\r\n`;
+  }
+
+  async importCSVToTable(tableName: string, csvContent: string): Promise<void> {
+    const [headerLine, ...dataLines] = csvContent
+      .split(/\r?\n/)
+      .filter(Boolean);
+    const columns = headerLine.split(",");
+
+    for (const line of dataLines) {
+      const values = parseCSVLine(line);
+      const placeholders = columns.map(() => "?").join(",");
+
+      await this.execute(
+        `INSERT INTO ${tableName} (${columns.join(",")}) VALUES (${placeholders})`,
+        values,
+      );
     }
   }
 }
