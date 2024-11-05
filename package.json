@@ -23,10 +23,8 @@
   },
   "scripts": {
     "build": "vite build && tsc",
-    "e2e": "npm run build:e2e && playwright test",
-    "setupcoi:e2e": "cp node_modules/coi-serviceworker/coi-serviceworker.js e2e",
-    "build:e2e": "vite build && tsc && npm run setupcoi:e2e",
-    "dev:e2e": "npm run build:e2e && vite --mode e2e",
+    "e2e": "npm run build && playwright test",
+    "dev:e2e": "npm run build && vite --mode e2e",
     "fmt": "biome format --write src e2e ",
     "prepublishOnly": "npm run build"
   },
@@ -55,7 +53,6 @@
     "@biomejs/biome": "1.8.3",
     "@playwright/test": "^1.46.1",
     "@types/node": "^22.5.2",
-    "coi-serviceworker": "^0.1.7",
     "playwright": "^1.46.1",
     "typescript": "^5.5.3",
     "vite": "^5.4.2"

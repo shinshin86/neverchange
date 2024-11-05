@@ -14,6 +14,7 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 
 - [Installation](#installation)
 - [Supported Browsers](#supported-browsers)
+- [You want to host on GitHub Pages and Netlify](#you-want-to-host-on-github-pages-and-netlify)
 - [Requirements](#requirements)
 - [Usage](#usage)
   - [Basic](#basic)
@@ -44,6 +45,30 @@ All tests are tested only through Playwright.
 * Microsoft Edge
 * Firefox
 * ~~Safari~~ (https://github.com/shinshin86/neverchange/issues/6)
+
+## You want to host on GitHub Pages and Netlify
+If you want to host on GitHub Pages and Netlify, you will need [coi-serviceworker.js](https://github.com/gzuidhof/coi-serviceworker).  
+Also, Safari does not function properly in this case. Refer to the following issue for more details.  
+https://github.com/shinshin86/neverchange/issues/6
+
+example:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NeverChange Example</title>
+  <!-- If you want to host on GitHub Pages and Netlify, you will need coi-serviceworker.js -->
+  <script src="/coi-serviceworker.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx">
+</body>
+</html>
+```
+
+A more detailed deployment guide can be found in the [Deployment Documentation](docs/deployment.md).
 
 ## Requirements
 

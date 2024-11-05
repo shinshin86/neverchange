@@ -28,6 +28,10 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: isE2E ? 3001 : 3000,
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
+      }
     },
     resolve: {
       alias: {
