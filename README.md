@@ -79,6 +79,9 @@ A more detailed deployment guide can be found in the [Deployment Documentation](
 
 ![Usage image](./images/Usage.jpg)
 
+Here’s how to use NeverChange.  
+If you’re interested in writing SQL efficiently with NeverChange, you may also want to check out [sqlc-gen-typescript-for-neverchange](https://github.com/shinshin86/sqlc-gen-typescript-for-neverchange), which generates TypeScript code using [sqlc](https://github.com/sqlc-dev/sqlc).
+
 ### Basic
 
 Here's a basic example of how to use NeverChangeDB to create a database, insert data, and query it:
