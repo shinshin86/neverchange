@@ -1,7 +1,7 @@
 {
   "name": "neverchange",
   "description": "NeverChange is a database solution for web applications using SQLite WASM and OPFS.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "type": "module",
   "main": "./dist/neverchange.umd.js",
   "module": "./dist/neverchange.es.js",
