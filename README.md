@@ -14,7 +14,9 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 
 - [Installation](#installation)
 - [Supported Browsers](#supported-browsers)
-- [You want to host on GitHub Pages and Netlify](#you-want-to-host-on-github-pages-and-netlify)
+- [About Application Deployment](#about-application-deployment)
+  - [Netlify (Recommendation)](#netlify-recommendation)
+  - [GitHub Pages](#github-pages)
 - [Requirements](#requirements)
 - [Usage](#usage)
   - [Basic](#basic)
@@ -36,19 +38,36 @@ npm install neverchange
 
 ## Supported Browsers
 
-This project currently supports and is tested on `Google Chrome` only.  
-We use `Playwright` for our end-to-end (E2E) tests, which are configured to run exclusively on `Chrome`.
-
-All tests are tested only through Playwright.
+All end-to-end tests are conducted with Playwright in Chrome, Edge, Chromium, and Firefox.
 
 * Google Chrome
 * Microsoft Edge
 * Firefox
-* ~~Safari~~ (https://github.com/shinshin86/neverchange/issues/6)
+* Safari
+  * (However, there are restrictions. See [About Application Deployment](#about-application-deployment) for more information.)
 
-## You want to host on GitHub Pages and Netlify
-If you want to host on GitHub Pages and Netlify, you will need [coi-serviceworker.js](https://github.com/gzuidhof/coi-serviceworker).  
-Also, Safari does not function properly in this case. Refer to the following issue for more details.  
+## About Application Deployment
+Our recommendation is to deploy with Netlify for better compatibility. See below for Netlify and GitHub Pages deployment instructions.
+
+
+A full deployment guide is available in the [Deployment Documentation](docs/deployment.md), including specific configuration examples.
+
+### Netlify (Recommendation)
+
+Netlify is recommended for deploying apps with persistent data on the web front end using NeverChange.
+
+The following statement in the `_headers` file can be used for this purpose.
+
+```
+/*  
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+```
+
+### GitHub Pages
+If you want to host on GitHub Pages, you will need [coi-serviceworker.js](https://github.com/gzuidhof/coi-serviceworker).
+
+But, Safari does not function properly in this case. Refer to the following issue for more details.  
 https://github.com/shinshin86/neverchange/issues/6
 
 example:
@@ -58,7 +77,7 @@ example:
 <html>
 <head>
   <title>NeverChange Example</title>
-  <!-- If you want to host on GitHub Pages and Netlify, you will need coi-serviceworker.js -->
+  <!-- If you want to host on GitHub, you will need coi-serviceworker.js -->
   <script src="/coi-serviceworker.js"></script>
 </head>
 <body>
@@ -68,7 +87,7 @@ example:
 </html>
 ```
 
-A more detailed deployment guide can be found in the [Deployment Documentation](docs/deployment.md).
+A full deployment guide is available in the [Deployment Documentation](docs/deployment.md), including specific configuration examples.
 
 ## Requirements
 
@@ -79,7 +98,8 @@ A more detailed deployment guide can be found in the [Deployment Documentation](
 
 ![Usage image](./images/Usage.jpg)
 
-Here’s how to use NeverChange.  
+Here’s how to use NeverChange with some practical examples.
+
 If you’re interested in writing SQL efficiently with NeverChange, you may also want to check out [sqlc-gen-typescript-for-neverchange](https://github.com/shinshin86/sqlc-gen-typescript-for-neverchange), which generates TypeScript code using [sqlc](https://github.com/sqlc-dev/sqlc).
 
 ### Basic
@@ -239,7 +259,7 @@ const blobData = convertToUint8Array(row.blobColumn);
 
 ### CSV Export and Import
 
-NeverChangeDB also supports CSV export and import functionality, allowing you to easily work with CSV files in your database.
+NeverChangeDB also supports CSV export and import functionality, which is useful for integrating with spreadsheet applications and external data sources.
 
 #### CSV Export
 
