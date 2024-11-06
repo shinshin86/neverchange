@@ -54,7 +54,9 @@ export default defineConfig({
 ## GitHub Pages
 If you use GitHub Pages, you cannot use OPFS because you cannot set the `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers.
 
-Therefore, you must use [coi-serviceworker.js](https://github.com/gzuidhof/coi-serviceworker) on GitHub Pages, but note that it doesn’t fully support Safari.
+Therefore, you must use [coi-serviceworker.js](https://github.com/gzuidhof/coi-serviceworker) on GitHub Pages. However, please note that this solution is not compatible with Safari.
+
+In other words, if you need to support Safari, we recommend using Netlify instead.
 
 You can load and use it in HTML as shown below.
 
