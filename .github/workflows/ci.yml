@@ -33,6 +33,6 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps --only-shell
     - name: Run Playwright tests
       run: npm run e2e
