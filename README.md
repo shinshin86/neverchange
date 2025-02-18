@@ -186,6 +186,123 @@ async function main() {
 main().catch(console.error);
 ```
 
+### Transactions
+
+NeverChangeDB supports transaction handling.  
+When you call `db.transaction(async (tx) => { ... })`, the statements within the callback are wrapped in a transaction.  
+- If the callback completes successfully, the transaction is committed automatically.  
+- If an error occurs or if you explicitly call `tx.rollback()`, the transaction is rolled back.
+
+#### Basic Example
+
+```ts
+import { NeverChangeDB } from 'neverchange';
+
+async function main() {
+  const db = new NeverChangeDB('myDatabase');
+  await db.init();
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      balance INTEGER NOT NULL
+    )
+  `);
+
+  // Perform multiple operations in a single transaction
+  await db.transaction(async (tx) => {
+    await tx.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["Alice", 1000]);
+    await tx.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["Bob", 500]);
+    // The transaction is automatically committed when this callback finishes successfully
+  });
+
+  const result = await db.query("SELECT * FROM accounts");
+  console.log(result);
+
+  await db.close();
+}
+
+main().catch(console.error);
+```
+
+#### Explicit Rollback
+
+You can call `tx.rollback()` at any point within the transaction callback to force an immediate rollback.
+`rollback()` throws an error internally, which interrupts the rest of the transaction logic.
+
+```ts
+await db.transaction(async (tx) => {
+  const [account] = await tx.query<{ balance: number }>(
+    "SELECT balance FROM accounts WHERE name = ?",
+    ["Alice"]
+  );
+
+  if (account.balance < 100) {
+    // If there's not enough balance, roll back the transaction here
+    await tx.rollback();
+  }
+
+  await tx.execute("UPDATE accounts SET balance = balance - 100 WHERE name = ?", ["Alice"]);
+  await tx.execute("UPDATE accounts SET balance = balance + 100 WHERE name = ?", ["Bob"]);
+});
+```
+
+#### Nested Transactions (Savepoints)
+NeverChangeDB also supports nested transactions. When `db.transaction` is called inside another transaction,
+it creates a new savepoint, so an inner failure rolls back only the nested portion.
+
+```ts
+await db.transaction(async (tx) => {
+  // Insert within top-level transaction
+  await tx.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["Charlie", 200]);
+
+  try {
+    // Begin a nested transaction (savepoint)
+    await tx.transaction(async (tx2) => {
+      await tx2.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["David", 300]);
+      // Force an error in the nested transaction
+      throw new Error("Error in nested transaction!");
+    });
+  } catch (err) {
+    console.warn("Nested transaction error:", err);
+    // Only the nested changes are rolled back
+  }
+
+  // Outer transaction can still proceed
+  await tx.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["Eve", 400]);
+});
+```
+
+In the above scenario, the insert for “David” will be rolled back due to the error in the nested transaction,
+but the outer transaction remains valid and will commit the other statements unless it encounters its own error.
+
+#### Returning Values
+
+If your callback returns a value, that value is also returned from the `transaction` method:
+
+```ts
+const updatedBalance = await db.transaction(async (tx) => {
+  await tx.execute("UPDATE accounts SET balance = balance - 50 WHERE name = ?", ["Alice"]);
+  const [row] = await tx.query<{ balance: number }>(
+    "SELECT balance FROM accounts WHERE name = ?",
+    ["Alice"]
+  );
+  return row.balance;
+});
+
+console.log("Alice's updated balance:", updatedBalance);
+```
+
+#### Manual `commit()` and `rollback()`
+While `transaction` automatically handles commits and rollbacks,
+you can also manually call `db.commit()` or `db.rollback()` **inside an active transaction** if needed.
+In nested scenarios, these map to `RELEASE SAVEPOINT` or `ROLLBACK TO SAVEPOINT`, respectively.
+**Note**: If you manually execute `BEGIN TRANSACTION` (via `db.execute("BEGIN TRANSACTION")`),
+it will not increment the internal transaction depth. 
+Thus, calling `db.commit()` or `db.rollback()` after a manual `BEGIN` will cause an error
+(because the library doesn't recognize it as an active transaction).
+
 ### Dump and Import Features
 
 NeverChangeDB offers two modes for database dump and import: Optimized Mode and SQLite Compatibility Mode.
