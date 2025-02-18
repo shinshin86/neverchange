@@ -16,6 +16,7 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 - [Supported Browsers](#supported-browsers)
 - [About Application Deployment](#about-application-deployment)
   - [Netlify (Recommendation)](#netlify-recommendation)
+  - [Cloudflare Pages (Recommendation)](#cloudflare-pages-recommendation)
   - [GitHub Pages](#github-pages)
 - [Requirements](#requirements)
 - [Usage](#usage)
@@ -62,6 +63,19 @@ The following statement in the `_headers` file can be used for this purpose.
 /*  
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
+```
+
+### Cloudflare Pages (Recommendation)
+
+Cloudflare Pages is recommended for deploying apps with persistent data on the web front end using NeverChange.
+
+The following statement in the `_headers` file can be used for this purpose.
+
+```
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
 ```
 
 ### GitHub Pages
@@ -449,12 +463,44 @@ This will insert the CSV data into the `your_table` table. Ensure the table is c
 
 ### Development
 
-Run E2E tests:
+**Run E2E tests:**
 ```
 npm run e2e
 ```
 
-Code Format:
+In CI tests, `Chrome` and `Edge` do not work, but you can test locally by adding the following settings.  
+(https://github.com/shinshin86/neverchange/issues/12)
+
+```diff
+--- a/playwright.config.ts
++++ b/playwright.config.ts
+@@ -12,6 +12,22 @@ export default defineConfig({
+     trace: 'on-first-retry',
+   },
+   projects: [
++    {
++      name: 'Google Chrome',
++      use: {
++        ...devices['Desktop Chrome'],
++        channel: 'chrome',
++        headless: false,
++      },
++    },
++    {
++      name: 'Microsoft Edge',
++      use: {
++        ...devices['Desktop Edge'],
++        channel: 'msedge',
++        headless: false,
++      },
++    },
+     {
+       name: 'chromium',
+       use: {
+```
+
+**Code Format:**
+
 ```
 npm run fmt
 ```
