@@ -6,6 +6,8 @@ This document provides detailed instructions for deploying NeverChange on GitHub
 - [Prerequisites](#prerequisites)
 - [Netlify (Recommendation)](#netlify-recommendation)
  - [When using Vite on Netlify](#when-using-vite-on-netlify)
+- [Cloudflare Pages (Recommendation)](#cloudflare-pages-recommendation)
+ - [When using Vite on Cloudflare Pages](#when-using-vite-on-cloudflare-pages)
 - [GitHub Pages](#github-pages)
   - [When using Vite on GitHub Pages](#when-using-vite-on-github-pages)
 
@@ -43,6 +45,41 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  optimizeDeps: {
+    exclude: ['@sqlite.org/sqlite-wasm'],
+  },
+});
+```
+
+## Cloudflare Pages (Recommendation)
+Cloudflare Pages is recommended for easy setup and compatibility with Safari on iPhone.
+
+Place the `_headers` file in the root directory of your deployment destination, with the following configuration:
+
+```
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
+```
+
+### When using Vite on Cloudflare Pages
+
+Also, if you use Vite during development, remember to put the following in `vite.config.{ts|js}`.
+
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Resource-Policy': 'same-origin',
     },
   },
   optimizeDeps: {

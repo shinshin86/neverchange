@@ -16,6 +16,7 @@ NeverChange is a database solution for web applications using SQLite WASM and OP
 - [Supported Browsers](#supported-browsers)
 - [About Application Deployment](#about-application-deployment)
   - [Netlify (Recommendation)](#netlify-recommendation)
+  - [Cloudflare Pages (Recommendation)](#cloudflare-pages-recommendation)
   - [GitHub Pages](#github-pages)
 - [Requirements](#requirements)
 - [Usage](#usage)
@@ -62,6 +63,19 @@ The following statement in the `_headers` file can be used for this purpose.
 /*  
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
+```
+
+### Cloudflare Pages (Recommendation)
+
+Cloudflare Pages is recommended for deploying apps with persistent data on the web front end using NeverChange.
+
+The following statement in the `_headers` file can be used for this purpose.
+
+```
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
 ```
 
 ### GitHub Pages
