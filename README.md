@@ -6,9 +6,9 @@
 
 NeverChange is a database solution for web applications using SQLite WASM and OPFS.
 
-## ⚠ Alpha Version Warning
+## 👩‍💻 Beta Version Warning 👨‍💻
 
-**This package is currently in alpha stage. The interface and method names may change with each update. Please use with caution.**
+**This package is currently in beta stage. The interface and method names may change with each update. Please use with caution.**
 
 ## Table of Contents
 
