@@ -463,12 +463,44 @@ This will insert the CSV data into the `your_table` table. Ensure the table is c
 
 ### Development
 
-Run E2E tests:
+**Run E2E tests:**
 ```
 npm run e2e
 ```
 
-Code Format:
+In CI tests, `Chrome` and `Edge` do not work, but you can test locally by adding the following settings.  
+(https://github.com/shinshin86/neverchange/issues/12)
+
+```diff
+--- a/playwright.config.ts
++++ b/playwright.config.ts
+@@ -12,6 +12,22 @@ export default defineConfig({
+     trace: 'on-first-retry',
+   },
+   projects: [
++    {
++      name: 'Google Chrome',
++      use: {
++        ...devices['Desktop Chrome'],
++        channel: 'chrome',
++        headless: false,
++      },
++    },
++    {
++      name: 'Microsoft Edge',
++      use: {
++        ...devices['Desktop Edge'],
++        channel: 'msedge',
++        headless: false,
++      },
++    },
+     {
+       name: 'chromium',
+       use: {
+```
+
+**Code Format:**
+
 ```
 npm run fmt
 ```
