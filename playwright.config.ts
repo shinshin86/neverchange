@@ -15,15 +15,15 @@ export default defineConfig({
     {
       name: 'Google Chrome',
       use: {
-        ...devices['Desktop Chrome'],
         channel: 'chrome',
+        headless: true,
       },
     },
     {
       name: 'Microsoft Edge',
       use: {
-        ...devices['Desktop Edge'],
         channel: 'msedge',
+        headless: true,
       },
     },
     {
