@@ -9,12 +9,18 @@ import {
 import { initialMigration } from "./migrations";
 import { parseCSVLine } from "./parser";
 
+// unique ID for each savepoint
+let SAVEPOINT_ID = 0;
+
 export class NeverChangeDB implements INeverChangeDB {
   private dbPromise: Promise<
     (command: string, params: any) => Promise<any>
   > | null = null;
   private dbId: string | null = null;
   private migrations: Migration[] = [];
+
+  private transactionDepth = 0;
+  private savepointStack: string[] = [];
 
   constructor(
     private dbName: string,
@@ -373,6 +379,116 @@ export class NeverChangeDB implements INeverChangeDB {
         `INSERT INTO ${tableName} (${columns.join(",")}) VALUES (${placeholders})`,
         values,
       );
+    }
+  }
+
+  /**
+   * execute a transaction.
+   * - if it's top-level, it will be a top-level transaction.
+   * - if it's nested, it will be a nested transaction.
+   */
+  async transaction<T>(fn: (tx: NeverChangeDB) => Promise<T>): Promise<T> {
+    if (this.transactionDepth === 0) {
+      // top-level transaction
+      await this.execute("BEGIN TRANSACTION");
+      this.transactionDepth = 1;
+      this.log("BEGIN TRANSACTION (top-level)");
+
+      try {
+        const result = await fn(this);
+        await this.execute("COMMIT");
+        this.log("COMMIT (top-level)");
+        this.transactionDepth = 0;
+        return result;
+      } catch (err) {
+        await this.execute("ROLLBACK");
+        this.log("ROLLBACK (top-level)");
+        this.transactionDepth = 0;
+        throw err;
+      }
+    } else {
+      // nested transaction
+      this.transactionDepth++;
+      const savepointName = `sp_${SAVEPOINT_ID++}`;
+      this.savepointStack.push(savepointName);
+
+      this.log(`BEGIN NESTED TRANSACTION: SAVEPOINT ${savepointName}`);
+      await this.execute(`SAVEPOINT ${savepointName}`);
+
+      try {
+        const result = await fn(this);
+        this.log(`RELEASE SAVEPOINT ${savepointName}`);
+        await this.execute(`RELEASE SAVEPOINT ${savepointName}`);
+
+        this.savepointStack.pop();
+        this.transactionDepth--;
+        return result;
+      } catch (err) {
+        // rollback to savepoint
+        this.log(`ROLLBACK TO ${savepointName}`);
+        await this.execute(`ROLLBACK TO ${savepointName}`);
+        this.savepointStack.pop();
+        this.transactionDepth--;
+        throw err;
+      }
+    }
+  }
+
+  /**
+   * explicitly rollback the current transaction.
+   * - if it's top-level, it will rollback all changes.
+   * - if it's nested, it will rollback to the last created savepoint.
+   */
+  async rollback(): Promise<never> {
+    if (this.transactionDepth <= 0) {
+      throw new Error("rollback() called but no active transaction exists.");
+    }
+
+    if (this.transactionDepth === 1) {
+      // top-level transaction
+      this.log("ROLLBACK (top-level)");
+      await this.execute("ROLLBACK");
+      this.transactionDepth = 0;
+      throw new Error("Transaction rolled back (top-level).");
+    } else {
+      // nested transaction
+      const savepointName = this.savepointStack.pop();
+      this.transactionDepth--;
+
+      if (!savepointName) {
+        throw new Error("rollback() called but no matching savepoint found.");
+      }
+
+      this.log(`ROLLBACK TO ${savepointName} (nested)`);
+      await this.execute(`ROLLBACK TO ${savepointName}`);
+
+      throw new Error(`Transaction rolled back to savepoint ${savepointName}.`);
+    }
+  }
+
+  /**
+   * if you want to commit explicitly, you can call this method.
+   * (but it will be committed automatically when the transaction(cb) ends.)
+   */
+  async commit(): Promise<void> {
+    if (this.transactionDepth <= 0) {
+      throw new Error("commit() called but no active transaction exists.");
+    }
+
+    if (this.transactionDepth === 1) {
+      // top-level commit
+      await this.execute("COMMIT");
+      this.log("COMMIT (top-level)");
+      this.transactionDepth = 0;
+    } else {
+      // nested transaction
+      const savepointName = this.savepointStack.pop();
+      this.transactionDepth--;
+      if (!savepointName) {
+        throw new Error("commit() called but no matching savepoint found.");
+      }
+      this.log(`RELEASE SAVEPOINT ${savepointName} (nested by user)`);
+      await this.execute(`RELEASE SAVEPOINT ${savepointName}`);
     }
   }
 }
