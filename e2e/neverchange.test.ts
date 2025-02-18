@@ -271,4 +271,68 @@ test.describe("NeverChangeDB", () => {
       { id: 2, name: "Top-level 2" },
     ]);
   });
+
+  test("should throw error if manually calling BEGIN and then db.commit()", async ({
+    page,
+  }) => {
+    const errorMsg = await page.evaluate(async () => {
+      const dbName = "test-manual-begin-commit";
+      const db = new (window as any).NeverChangeDB(dbName);
+      await db.init();
+
+      await db.execute("DROP TABLE IF EXISTS manual_test");
+      await db.execute(
+        "CREATE TABLE manual_test (id INTEGER PRIMARY KEY, name TEXT)",
+      );
+
+      try {
+        // 手動で BEGIN TRANSACTION 実行
+        await db.execute("BEGIN TRANSACTION");
+        // トランザクション深度(transactionDepth) は上がらない
+
+        // ここで db.commit() を呼ぶと
+        // "commit() called but no active transaction exists." とエラーになるはず
+        await db.commit();
+        return "No error thrown";
+      } catch (err: any) {
+        return err.message;
+      } finally {
+        await db.close();
+      }
+    });
+
+    // 実際に「commit() called but no active transaction exists.」等のエラーが返ってくるはず
+    expect(errorMsg).toMatch(
+      /commit\(\) called but no active transaction exists\./,
+    );
+  });
+
+  test("should throw error if manually calling BEGIN and then db.rollback()", async ({
+    page,
+  }) => {
+    const errorMsg = await page.evaluate(async () => {
+      const dbName = "test-manual-begin-rollback";
+      const db = new (window as any).NeverChangeDB(dbName);
+      await db.init();
+
+      try {
+        // manually call BEGIN TRANSACTION
+        await db.execute("BEGIN TRANSACTION");
+        // transactionDepth is not incremented
+
+        // when db.rollback() is called,
+        // "rollback() called but no active transaction exists." should be returned
+        await db.rollback();
+        return "No error thrown";
+      } catch (err: any) {
+        return err.message;
+      } finally {
+        await db.close();
+      }
+    });
+
+    expect(errorMsg).toMatch(
+      /rollback\(\) called but no active transaction exists\./,
+    );
+  });
 });
