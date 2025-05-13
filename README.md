@@ -1,6 +1,6 @@
 # NeverChange
 
-[![CI](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml/badge.svg)](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml)
+[![CI](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml/badge.svg)](https://github.com/shinshin86/neverchange/actions/workflows/ci.yml) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/shinshin86/neverchange)
 
 ![Project logo](./images/logo.png)
 
