@@ -154,6 +154,42 @@ async function main() {
 main().catch(console.error);
 ```
 
+### Constructor Options
+
+NeverChangeDB constructor accepts an optional second parameter for configuration:
+
+```typescript
+const db = new NeverChangeDB('myDatabase', {
+  debug: false,           // Enable debug logging (default: false)
+  isMigrationActive: true // Enable automatic migration system (default: true)
+});
+```
+
+#### Options:
+
+- **`debug`**: When set to `true`, enables detailed logging of database operations. Useful for development and debugging.
+- **`isMigrationActive`**: When set to `true` (default), the migration system is automatically enabled. When `false`, migrations are disabled and you need to manage schema changes manually.
+
+#### Example with disabled migrations:
+
+```typescript
+// Database without automatic migration system
+const db = new NeverChangeDB('myDatabase', { 
+  isMigrationActive: false,
+  debug: true 
+});
+await db.init();
+
+// You'll need to create tables manually
+await db.execute(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL
+  )
+`);
+```
+
 ### Migration
 
 NeverChangeDB supports database migrations, allowing you to evolve your database schema over time. Here's an example of how to define and use migrations:
@@ -308,10 +344,30 @@ const updatedBalance = await db.transaction(async (tx) => {
 console.log("Alice's updated balance:", updatedBalance);
 ```
 
-#### Manual `commit()` and `rollback()`
+#### Manual `commit()` and `rollback()` Methods
 While `transaction` automatically handles commits and rollbacks,
-you can also manually call `db.commit()` or `db.rollback()` **inside an active transaction** if needed.
-In nested scenarios, these map to `RELEASE SAVEPOINT` or `ROLLBACK TO SAVEPOINT`, respectively.
+you can also manually call `db.commit()` or `db.rollback()` **inside an active transaction** if needed:
+
+```ts
+// Manual rollback example
+await db.transaction(async (tx) => {
+  await tx.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["Test", 100]);
+  
+  // Some condition check
+  const shouldRollback = true;
+  if (shouldRollback) {
+    await tx.rollback(); // Explicitly rollback the transaction
+  }
+});
+
+// Manual commit example (though auto-commit is usually preferred)
+await db.transaction(async (tx) => {
+  await tx.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ["Test", 100]);
+  await tx.commit(); // Explicitly commit the transaction
+});
+```
+
+In nested scenarios, these methods map to `RELEASE SAVEPOINT` or `ROLLBACK TO SAVEPOINT`, respectively.
 **Note**: If you manually execute `BEGIN TRANSACTION` (via `db.execute("BEGIN TRANSACTION")`),
 it will not increment the internal transaction depth. 
 Thus, calling `db.commit()` or `db.rollback()` after a manual `BEGIN` will cause an error
@@ -345,11 +401,20 @@ This mode generates dump output that closely resembles the standard SQLite `.dum
 const db = new NeverChangeDB('myDatabase');
 await db.init();
 
-// Optimized Mode (default)
+// Optimized Mode (default) - dump entire database
 const optimizedDump = await db.dumpDatabase();
 
-// SQLite Compatibility Mode
+// SQLite Compatibility Mode - dump entire database
 const compatibleDump = await db.dumpDatabase({ compatibilityMode: true });
+
+// Dump specific table only
+const tableDump = await db.dumpDatabase({ table: 'users' });
+
+// Dump specific table with compatibility mode
+const tableCompatibleDump = await db.dumpDatabase({ 
+  table: 'users', 
+  compatibilityMode: true 
+});
 
 // Importing a Database
 // Optimized Mode (default)
@@ -402,13 +467,20 @@ await db.init();
 
 /* We will assume that you have added tables and information */
 
+// Basic CSV export
 const csvContent = await db.dumpTableToCSV('your_table');
 console.log('CSV Export:', csvContent);
+
+// CSV export with all fields quoted
+const quotedCsvContent = await db.dumpTableToCSV('your_table', { 
+  quoteAllFields: true 
+});
+console.log('Quoted CSV Export:', quotedCsvContent);
 
 await db.close();
 ```
 
-This will export the contents of `your_table` to a CSV string.
+This will export the contents of `your_table` to a CSV string. The `quoteAllFields` option allows you to force all fields to be quoted, which can be useful for ensuring compatibility with certain CSV parsers.
 
 #### CSV Import
 
