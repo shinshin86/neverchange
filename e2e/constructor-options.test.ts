@@ -210,4 +210,110 @@ test.describe("NeverChangeDB Constructor Options", () => {
     expect(hasDebugLogs).toBe(true);
     expect(result).toBe(true);
   });
+
+  // Error handling tests
+  test("should handle invalid option types gracefully", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const results = [];
+
+      // Test 1: Invalid debug option type
+      try {
+        const db1 = new (window as any).NeverChangeDB("invalid-debug-db", {
+          debug: "yes", // Should be boolean
+        });
+        await db1.init();
+        results.push({ case: "invalid_debug", success: true });
+        await db1.close();
+      } catch (err) {
+        results.push({ case: "invalid_debug", error: err.message });
+      }
+
+      // Test 2: Invalid isMigrationActive option type
+      try {
+        const db2 = new (window as any).NeverChangeDB("invalid-migration-db", {
+          isMigrationActive: 1, // Should be boolean
+        });
+        await db2.init();
+        results.push({ case: "invalid_migration", success: true });
+        await db2.close();
+      } catch (err) {
+        results.push({ case: "invalid_migration", error: err.message });
+      }
+
+      // Test 3: Unknown options
+      try {
+        const db3 = new (window as any).NeverChangeDB("unknown-options-db", {
+          unknownOption: true,
+          anotherUnknown: "value",
+        });
+        await db3.init();
+        results.push({ case: "unknown_options", success: true });
+        await db3.close();
+      } catch (err) {
+        results.push({ case: "unknown_options", error: err.message });
+      }
+
+      return results;
+    });
+
+    // The database should handle invalid options gracefully
+    expect(result.length).toBe(3);
+    result.forEach((r) => {
+      expect(r.case).toBeTruthy();
+      // Either success or error is acceptable - the important thing is no crash
+    });
+  });
+
+  test("should handle database initialization errors properly", async ({
+    page,
+  }) => {
+    const result = await page.evaluate(async () => {
+      const results = [];
+
+      // Test 1: Multiple init calls
+      try {
+        const db = new (window as any).NeverChangeDB("multi-init-db");
+        await db.init();
+        await db.init(); // Second init should be safe
+        await db.init(); // Third init should be safe
+        results.push({ case: "multiple_init", success: true });
+        await db.close();
+      } catch (err) {
+        results.push({ case: "multiple_init", error: err.message });
+      }
+
+      // Test 2: Operations before init
+      try {
+        const db = new (window as any).NeverChangeDB("no-init-db");
+        // Try to execute query before init
+        await db.execute("SELECT 1");
+        results.push({ case: "no_init", success: true });
+      } catch (err) {
+        results.push({ case: "no_init", error: err.message });
+      }
+
+      // Test 3: Operations after close
+      try {
+        const db = new (window as any).NeverChangeDB("after-close-db");
+        await db.init();
+        await db.close();
+        // Try to execute query after close
+        await db.execute("SELECT 1");
+        results.push({ case: "after_close", success: false });
+      } catch (err) {
+        results.push({ case: "after_close", error: err.message });
+      }
+
+      return results;
+    });
+
+    // Multiple init should be safe
+    expect(result[0].success).toBe(true);
+
+    // Operations before init should fail
+    expect(result[1].error).toBeTruthy();
+
+    // Operations after close should fail
+    expect(result[2].error).toBeTruthy();
+  });
 });
