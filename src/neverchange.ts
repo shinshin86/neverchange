@@ -7,7 +7,7 @@ import {
   Migration,
 } from "./types";
 import { initialMigration } from "./migrations";
-import { parseCSVLine } from "./parser";
+import { parseCSVRecords } from "./parser";
 
 // unique ID for each savepoint
 let SAVEPOINT_ID = 0;
@@ -366,18 +366,18 @@ export class NeverChangeDB implements INeverChangeDB {
   }
 
   async importCSVToTable(tableName: string, csvContent: string): Promise<void> {
-    const [headerLine, ...dataLines] = csvContent
-      .split(/\r?\n/)
-      .filter(Boolean);
-    const columns = headerLine.split(",");
+    const records = parseCSVRecords(csvContent);
+    if (records.length === 0) return;
+    const [header, ...rows] = records;
+    const columns = header;
 
-    for (const line of dataLines) {
-      const values = parseCSVLine(line);
+    for (const row of rows) {
+      if (row.length === 0) continue;
       const placeholders = columns.map(() => "?").join(",");
 
       await this.execute(
         `INSERT INTO ${tableName} (${columns.join(",")}) VALUES (${placeholders})`,
-        values,
+        row,
       );
     }
   }
