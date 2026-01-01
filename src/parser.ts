@@ -27,8 +27,12 @@ export const parseCSVRecords = (csv: string): string[][] => {
       if (inQuotes && next === '"') {
         field += '"';
         i++;
+      } else if (inQuotes) {
+        inQuotes = false;
+      } else if (field === "") {
+        inQuotes = true;
       } else {
-        inQuotes = !inQuotes;
+        field += ch;
       }
       continue;
     }

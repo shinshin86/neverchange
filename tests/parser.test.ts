@@ -41,4 +41,12 @@ describe("parseCSVRecords", () => {
       "CSV parsing error: unclosed quoted field",
     );
   });
+
+  it("treats quotes in middle of field as literal characters", () => {
+    const csv = 'id,content\n1,a"b"c';
+    expect(parseCSVRecords(csv)).toEqual([
+      ["id", "content"],
+      ["1", 'a"b"c'],
+    ]);
+  });
 });
