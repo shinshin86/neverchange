@@ -49,4 +49,13 @@ describe("parseCSVRecords", () => {
       ["1", 'a"b"c'],
     ]);
   });
+
+  it("returns empty array for empty string", () => {
+    expect(parseCSVRecords("")).toEqual([]);
+  });
+
+  it("returns single row for header only CSV", () => {
+    const csv = "id,name,email";
+    expect(parseCSVRecords(csv)).toEqual([["id", "name", "email"]]);
+  });
 });
