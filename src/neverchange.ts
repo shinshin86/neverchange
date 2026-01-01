@@ -371,7 +371,13 @@ export class NeverChangeDB implements INeverChangeDB {
     const [header, ...rows] = records;
     const columns = header;
 
-    for (const row of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.length !== columns.length) {
+        throw new Error(
+          `CSV row ${i + 2} has ${row.length} fields, but header has ${columns.length} columns`,
+        );
+      }
       const placeholders = columns.map(() => "?").join(",");
 
       await this.execute(

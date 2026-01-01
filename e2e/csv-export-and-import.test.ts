@@ -253,4 +253,31 @@ test.describe("NeverChangeDB CSV Export and Import", () => {
     expect(importedData).toHaveLength(1);
     expect(importedData[0].name).toBe("Alice");
   });
+
+  test("should throw error when CSV row has mismatched column count", async ({
+    page,
+  }) => {
+    const csvContent = "id,name,email\n1,John";
+
+    const error = await page.evaluate(async (csvContent) => {
+      const db = new (window as any).NeverChangeDB("csv-mismatch-db");
+      await db.init();
+      await db.execute(`
+        CREATE TABLE test_table (
+          id INTEGER PRIMARY KEY,
+          name TEXT,
+          email TEXT
+        )
+      `);
+
+      try {
+        await db.importCSVToTable("test_table", csvContent);
+        return null;
+      } catch (e: any) {
+        return e.message;
+      }
+    }, csvContent);
+
+    expect(error).toContain("row 2 has 2 fields, but header has 3 columns");
+  });
 });
