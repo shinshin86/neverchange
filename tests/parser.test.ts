@@ -34,4 +34,11 @@ describe("parseCSVRecords", () => {
       ["2", "Bob"],
     ]);
   });
+
+  it("throws error for unclosed quoted field", () => {
+    const csv = 'id,content\n1,"hello';
+    expect(() => parseCSVRecords(csv)).toThrow(
+      "CSV parsing error: unclosed quoted field",
+    );
+  });
 });

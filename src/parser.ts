@@ -50,6 +50,10 @@ export const parseCSVRecords = (csv: string): string[][] => {
     field += ch;
   }
 
+  if (inQuotes) {
+    throw new Error("CSV parsing error: unclosed quoted field");
+  }
+
   if (rowHasData) {
     pushRow();
   }
