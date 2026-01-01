@@ -205,4 +205,79 @@ test.describe("NeverChangeDB CSV Export and Import", () => {
       'This is a test with, commas and "quotes".',
     );
   });
+
+  test("should import CSV with quoted multiline field", async ({ page }) => {
+    const csvContent =
+      'id,role,content,timestamp\n1,user,"hello\nworld",2024-01-01T00:00:00.000Z';
+
+    const importedData = await page.evaluate(async (csvContent) => {
+      const db = new (window as any).NeverChangeDB("csv-multiline-import-db");
+      await db.init();
+      await db.execute(`
+        CREATE TABLE test_table (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          role TEXT,
+          content TEXT,
+          timestamp TEXT
+        )
+      `);
+
+      await db.importCSVToTable("test_table", csvContent);
+
+      return await db.query("SELECT * FROM test_table");
+    }, csvContent);
+
+    expect(importedData).toHaveLength(1);
+    expect(importedData[0].content).toBe("hello\nworld");
+    expect(importedData[0].role).toBe("user");
+  });
+
+  test("should import CSV with BOM and trailing newline", async ({ page }) => {
+    const csvContent = "\uFEFFid,name\n1,Alice\n";
+
+    const importedData = await page.evaluate(async (csvContent) => {
+      const db = new (window as any).NeverChangeDB("csv-bom-import-db");
+      await db.init();
+      await db.execute(`
+        CREATE TABLE test_table (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT
+        )
+      `);
+
+      await db.importCSVToTable("test_table", csvContent);
+
+      return await db.query("SELECT * FROM test_table");
+    }, csvContent);
+
+    expect(importedData).toHaveLength(1);
+    expect(importedData[0].name).toBe("Alice");
+  });
+
+  test("should throw error when CSV row has mismatched column count", async ({
+    page,
+  }) => {
+    const csvContent = "id,name,email\n1,John";
+
+    const error = await page.evaluate(async (csvContent) => {
+      const db = new (window as any).NeverChangeDB("csv-mismatch-db");
+      await db.init();
+      await db.execute(`
+        CREATE TABLE test_table (
+          id INTEGER PRIMARY KEY,
+          name TEXT,
+          email TEXT
+        )
+      `);
+
+      try {
+        await db.importCSVToTable("test_table", csvContent);
+        return null;
+      } catch (e: any) {
+        return e.message;
+      }
+    }, csvContent);
+
+    expect(error).toContain("row 2 has 2 fields, but header has 3 columns");
+  });
 });
