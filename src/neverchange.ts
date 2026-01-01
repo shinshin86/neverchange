@@ -372,7 +372,6 @@ export class NeverChangeDB implements INeverChangeDB {
     const columns = header;
 
     for (const row of rows) {
-      if (row.length === 0) continue;
       const placeholders = columns.map(() => "?").join(",");
 
       await this.execute(
